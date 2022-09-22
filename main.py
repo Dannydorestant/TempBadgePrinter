@@ -4,11 +4,9 @@ import PIL.Image, PIL.ImageTk
 import time
 import argparse
 import glob
-
-import win32print
 from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
 import os
-import win32api
 
 
 class App:
@@ -62,7 +60,7 @@ class App:
         self.btn_print_badge = tk.Button(self.canvas_employee, text="Print Badge", command=self.get_input)
         self.btn_print_badge.grid(row=11, column=0)
 
-        self.btn_quit = tk.Button(self.canvas_employee, text='QUIT', command=quit)
+        self.btn_quit = tk.Button(self.canvas_employee, text='QUIT', command=self.window.destroy)
         self.btn_quit.grid(row=12, column=0)
 
         # After it is called once, the update method will be automatically called every delay milliseconds
@@ -80,28 +78,39 @@ class App:
         list_of_files = glob.glob('*.jpg')  # * means all if need specific format then *.csv
         latest_pic= max(list_of_files, key=os.path.getctime)
 
-        self.generate_pdf()
-        #os.startfile(f"{name}.pdf", "print")
-
-        GHOSTSCRIPT_PATH = "C:/Program Files (x86)gs/gs9.09/bin/gswin32.exe"
-        GSPRINT_PATH = "C:/Users/admindan/PycharmProjects/TempBadgePrinter/GSPRINT/gsprint.exe"
-
-        # YOU CAN PUT HERE THE NAME OF YOUR SPECIFIC PRINTER INSTEAD OF DEFAULT
-        currentprinter = win32print.GetDefaultPrinter()
-
-        win32api.ShellExecute(0, 'open', GSPRINT_PATH,
-                              '-ghostscript "' + GHOSTSCRIPT_PATH + '" -printer "' + currentprinter + f'" "{name}.pdf"',
-                              '.', 0)
 
 
 
-    def generate_pdf(self,name='Test',dept='',issue_date='',exp_date='',latest_pic=''):
+        self.generate_pdf(name,dept,issue_date,exp_date,latest_pic)
+        with open("Log.txt","a") as log_file:
+            log_file.write(f"{name} , {issue_date} \n")
+        os.startfile(f"{name}.pdf", "print")
+
+
+
+
+
+    def generate_pdf(self,name,dept,issue_date,exp_date,latest_pic):
+        logo = ImageReader("JegLogo.png")
         my_canvas = canvas.Canvas(f"{name}.pdf", pagesize=(288,144))
-        my_canvas.drawString(200, 72, "Welcome to Reportlab!")
+
+        my_canvas.setFont("Helvetica-Bold", 12)
+        my_canvas.drawString(160, 82, "TEMPORARY BADGE")
+
+        my_canvas.setFont('Helvetica-Bold', 8)
+        my_canvas.drawString(170, 62, "Name: ")
+        my_canvas.drawString(170, 50, "Dept: ")
+        my_canvas.drawString(170, 38, "Issued: ")
+        my_canvas.drawString(170, 26, "Expire: ")
+
+        my_canvas.setFont("Helvetica", 8)
+        my_canvas.drawString(200, 62, name)
+        my_canvas.drawString(200, 50, dept)
+        my_canvas.drawString(200, 38, issue_date)
+        my_canvas.drawString(200, 26, exp_date)
+        my_canvas.drawImage(latest_pic,20,10,120,120)
+        my_canvas.drawImage(logo, 170, 92, 90, 40)
         my_canvas.save()
-
-
-
 
     def snapshot(self):
         # Get a frame from the video source
@@ -182,7 +191,7 @@ class VideoCapture:
             else:
                 return (ret, None)
         else:
-            return (ret, None)
+            return (None)
 
     # Release the video source when the object is destroyed
     def __del__(self):
@@ -219,10 +228,7 @@ class CommandLineParser:
 
 
 def main():
-
     # Create a window and pass it to the Application object
     App(tk.Tk(), 'Video Recorder')
-
-
 
 main()
